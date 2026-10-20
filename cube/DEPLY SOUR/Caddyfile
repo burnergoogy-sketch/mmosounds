@@ -1,0 +1,5 @@
+# Replace with your real domain (its DNS A record must point at this server).
+# Caddy gets and renews the HTTPS certificate automatically and proxies WebSockets.
+play.example.com {
+    reverse_proxy sour:1337
+}
