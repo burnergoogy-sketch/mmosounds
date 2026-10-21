@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cube 2 deploy check</title>
+<style>:root{--bg:#fff;--fg:#111;--mut:#666;--ok:#0a7a2f;--bad:#b00020;--line:#ddd}
+@media (prefers-color-scheme:dark){:root{--bg:#141414;--fg:#eee;--mut:#999;--ok:#4cd27a;--bad:#ff6b81;--line:#333}}
+body{font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg);max-width:820px;margin:24px auto;padding:0 16px}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;font-size:14px}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.m{color:var(--mut)}code{font-size:13px}
+#sum{padding:12px;border:1px solid var(--line);border-radius:8px;margin:14px 0}</style></head><body>
+<h1>Cube 2 deploy check</h1><p class="m">Open this page on your site (e.g. <code>yoursite.com/check.html</code>). It tests every file the game needs.</p>
+<div id="sum">Running checks&hellip;</div><table id="t"><tr><th>File</th><th>Result</th><th>Got</th><th>Expected</th><th>Type</th></tr></table>
+<p id="env" class="m"></p>
+<script>
+const EXPECT={"index.html": 103703, "bb.js": 404441, "bb.wasm": 2067459, "base.data": 7364635, "character.data": 3629792, "low.data": 9067204, "game/preload_base.js": 31089, "game/preload_character.js": 22922, "game/preload_low.js": 16295, "game/setup_low.js": 925, "game/gl-matrix.js": 52974, "game/zee-worker.js": 292829, "js/api.js": 2494, "js/zee.js": 1145};
+const $=s=>document.querySelector(s);
+(async()=>{
+ let bad=0;const t=$('#t');
+ for(const [f,exp] of Object.entries(EXPECT)){
+  const tr=document.createElement('tr');let res,got='-',ct='-';
+  try{
+   const r=await fetch(f+'?c='+Date.now(),{cache:'no-store'});ct=r.headers.get('content-type')||'?';
+   const b=new Uint8Array(await r.arrayBuffer());got=b.length;
+   if(!r.ok)res='HTTP '+r.status;
+   else if(/text\/html/.test(ct)&&f!=='index.html')res='Server sent a web page instead of the file';
+   else if(f==='bb.wasm'&&!(b[0]===0&&b[1]===0x61&&b[2]===0x73&&b[3]===0x6d))res='Not a real wasm file';
+   else if(got!==exp)res=f==='index.html'?'Page was MODIFIED (not the original)':'Wrong size (truncated or altered)';
+   else res='OK';
+  }catch(e){res='Failed to load: '+e.message}
+  if(res!=='OK')bad++;
+  tr.innerHTML='<td><code>'+f+'</code></td><td class="'+(res==='OK'?'ok':'bad')+'">'+(res==='OK'?'&#10003; OK':'&#10007; '+res)+'</td><td>'+got+'</td><td>'+exp+'</td><td class="m">'+ct+'</td>';
+  t.appendChild(tr);
+ }
+ $('#sum').innerHTML=bad?'<span class="bad">'+bad+' problem(s) found.</span> Send me a screenshot of this page.':'<span class="ok">All files are being served correctly.</span> If the game still shows black, the page itself was altered; re-upload the original index.html.';
+ let gl='no';try{const c=document.createElement('canvas');gl=c.getContext('webgl')?'yes':'no'}catch(e){}
+ $('#env').textContent='WebAssembly: '+(typeof WebAssembly==='object'?'yes':'NO')+' | WebGL: '+gl+' | Secure context: '+(isSecureContext?'yes':'no')+' | Page: '+location.href;
+})();
+</script></body></html>
